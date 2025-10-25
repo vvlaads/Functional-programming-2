@@ -1,0 +1,21 @@
+{:paths ["src" "test"]
+
+ :deps {org.clojure/clojure {:mvn/version "1.11.3"}}
+
+ :aliases {:fmt {:extra-deps {cljfmt/cljfmt {:mvn/version "0.9.2"}}
+                 :main-opts ["-m" "cljfmt.main" "check" "src" "test"
+                             "--indentation"
+                             "--remove-consecutive-blank-lines"
+                             "--remove-trailing-whitespace"
+                             "--remove-surrounding-whitespace"
+                             "--insert-missing-whitespace"
+                             "--split-keypairs-over-multiple-lines"
+                             "--sort-ns-references"]}
+
+           :lint {:extra-deps {clj-kondo/clj-kondo {:mvn/version "2025.09.22"}}
+                  :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
+
+           :test {:extra-paths ["test"]
+                  :extra-deps {io.github.cognitect-labs/test-runner
+                               {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+                  :main-opts ["-m" "cognitect.test-runner"]}}}
