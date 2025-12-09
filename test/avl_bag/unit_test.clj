@@ -1,7 +1,8 @@
 (ns avl-bag.unit-test
-  (:require [clojure.test :refer :all]
-            [avl-bag.core :refer :all]
-            [avl-bag.bag :refer :all]))
+  (:require
+   [avl-bag.bag :refer [Bag add add-one concat-bag count-of del del-one empty-bag equals-bag? filter-bag fold-left fold-right has? map-bag set-count total-count unique-items-count]]
+   [avl-bag.core :refer [avl-bag ->AvlBag]]
+   [clojure.test :refer [deftest is]]))
 
 (deftest avlbag-full-tests
   ; Создание и пустой bag

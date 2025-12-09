@@ -269,81 +269,74 @@
                        acc))]
       (fold-right-node (:left node) f acc-node))))
 
-; Объединение деревьев
-(defn- merge-into-root [node acc-root]
-  (if (nil? node)
-    acc-root
-    (let [acc-left (merge-into-root (:left node) acc-root)
-          acc-with-node (add-value acc-left (:value node) (:count node))]
-      (merge-into-root (:right node) acc-with-node))))
-
 ; Тип данных AVL-BAG
 (defrecord AvlBag [root]
   Bag
   (add
-    [this element count]
+    [_ element count]
     (if (> count 0)
       (->AvlBag (add-value root element count))
       (->AvlBag root)))
 
   (add-one
-    [this element]
+    [_ element]
     (->AvlBag (add-value root element 1)))
 
   (del
-    [this element count]
+    [_ element count]
     (->AvlBag (del-value root element count)))
 
   (del-one
-    [this element]
+    [_ element]
     (->AvlBag (del-value root element 1)))
 
   (set-count
-    [this element count]
+    [_ element count]
     (if (> count 0)
       (->AvlBag (set-count-for-value root element count))
       (->AvlBag root)))
 
   (has?
-    [this element]
+    [_ element]
     (has-value root element))
 
   (count-of
-    [this element]
+    [_ element]
     (count-of-value root element))
 
   (total-count
-    [this]
+    [_]
     (count-of-elements root))
 
   (unique-items-count
-    [this]
+    [_]
     (count-of-unique-elements root))
 
   (map-bag
-    [this f]
+    [_ f]
     (->AvlBag (map-node-into-root root nil f)))
 
   (filter-bag
-    [this pred]
+    [_ pred]
     (->AvlBag (filter-node-into-root root nil pred)))
 
   (fold-left
-    [this f init]
+    [_ f init]
     (fold-left-node root f init))
 
   (fold-right
-    [this f init]
+    [_ f init]
     (fold-right-node root f init))
 
   (empty-bag
-    [this]
+    [_]
     (->AvlBag nil))
 
   (concat-bag
     [this bag]
-    (let [other-root (.-root bag)]
-      (->AvlBag (merge-into-root other-root root))))
+    (.fold-left bag
+                (fn [acc v] (.add acc v 1))
+                this))
 
   (equals-bag?
     [this bag]

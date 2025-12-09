@@ -1,9 +1,11 @@
 (ns avl-bag.property-based-test
-  (:require [clojure.test.check.clojure-test :refer [defspec]]
-            [clojure.test.check.properties :as prop]
-            [clojure.test.check.generators :as gen]
-            [avl-bag.core :refer :all]
-            [avl-bag.bag :refer :all]))
+  {:clj-kondo/ignore [:unresolved-symbol]}
+  (:require
+   [avl-bag.bag :refer [add-one concat-bag equals-bag? total-count]]
+   [avl-bag.core :refer [avl-bag]]
+   [clojure.test.check.clojure-test :refer [defspec]]
+   [clojure.test.check.generators :as gen]
+   [clojure.test.check.properties :as prop]))
 
 ; Генератор случайных чисел для значений
 (def value-gen (gen/choose 0 100))
