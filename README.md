@@ -255,26 +255,19 @@
                 this))
 
   (equals-bag?
-    [this bag]
-    (let [other-root (.-root bag)]
-      (if (and (= (.total-count this) (.total-count bag))
-               (= (.unique-items-count this) (.unique-items-count bag)))
-        (letfn [(eq-node? [node]
-                  (if (nil? node)
-                    true
-                    (let [v (:value node)
-                          c (:count node)
-                          other-c (count-of-value other-root v)]
-                      (and (= c other-c)
-                           (eq-node? (:left node))
-                           (eq-node? (:right node))))))]
-          (eq-node? root))
-        false))))
+    [this other-bag]
+    (and (= (.total-count this) (.total-count other-bag))
+         (= (.unique-items-count this) (.unique-items-count other-bag))
+         (.fold-left this
+                     (fn [acc v]
+                       (and acc
+                            (= (.count-of this v)
+                               (.count-of other-bag v))))
+                     true))))
 
 ; Функция-конструктор
 (defn avl-bag
-  ([] (->AvlBag nil))
-  ([root] (->AvlBag root)))
+  ([] (->AvlBag nil)))
 ```
 
 ## Тестирование
