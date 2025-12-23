@@ -8,6 +8,14 @@
    :left left
    :right right})
 
+; Сравнение значений (в том числе с разными типами)
+(defn- compare-values [a, b]
+  (let [type-a (type a)
+        type-b (type b)]
+    (if (= type-a type-b)
+      (compare a b)
+      (compare (str type-a) (str type-b)))))
+
 ; Малое левое вращение
 (defn- small-left-rotation [a]
   (let [l (:left a)
@@ -108,7 +116,7 @@
                    (:left node)
                    (:right node))
 
-        (< (:value node) value)
+        (neg? (compare-values (:value node) value))
         (balance (init-node (:value node)
                             (:count node)
                             (:left node)
@@ -170,7 +178,7 @@
                      (:right node))
           (replace-removed-node node))
 
-        (< (:value node) value)
+        (neg? (compare-values (:value node) value))
         (balance (init-node (:value node)
                             (:count node)
                             (:left node)
@@ -189,7 +197,7 @@
                    (:left node)
                    (:right node))
 
-        (< (:value node) value)
+        (neg? (compare-values (:value node) value))
         (init-node (:value node)
                    (:count node)
                    (:left node)
@@ -204,14 +212,14 @@
 (defn- has-value [node value]
   (cond (nil? node) false
         (= (:value node) value) true
-        (< (:value node) value) (has-value (:right node) value)
+        (neg? (compare-values (:value node) value)) (has-value (:right node) value)
         :else (has-value (:left node) value)))
 
 ; Количество повторов значения в дереве
 (defn- count-of-value [node value]
   (cond (nil? node) 0
         (= (:value node) value) (:count node)
-        (< (:value node) value) (count-of-value (:right node) value)
+        (neg? (compare-values (:value node) value)) (count-of-value (:right node) value)
         :else (count-of-value (:left node) value)))
 
 ; Количество элементов в дереве, учитывая повторы
