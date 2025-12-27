@@ -274,3 +274,49 @@
 ; Проверка на соответсвию протоколу
 (deftest satisfies-bag
   (is (satisfies? Bag (avl-bag))))
+
+(deftest clojure-interfaces-tests
+  ; Seqable - можно ли получить последовательность
+  (let [bag (-> (avl-bag)
+                (add 1 2)
+                (add 2 1))]
+    (is (seq? (seq bag)))
+    (is (= [1 1 2] (sort (seq bag)))) ; сортируем, т.к. порядок может быть любой
+    (is (= 3 (count (seq bag)))))
+
+  ; Counted - работает ли count
+  (let [bag (-> (avl-bag)
+                (add 1 3)
+                (add 2 2))]
+    (is (= 5 (count bag))))
+
+  ; IPersistentCollection - conj и empty
+  (let [bag (-> (avl-bag)
+                (add 1 2))]
+    (is (= 3 (count-of (conj bag 1) 1))) ; conj должен увеличивать count
+    (is (= 1 (count-of (conj bag 2) 2))) ; conj для нового элемента
+    (is (empty? (empty bag)))
+    (is (= 0 (count (empty bag)))))
+
+  ; ILookup/IFn - доступ как функция и через get
+  (let [bag (-> (avl-bag)
+                (add :a 3)
+                (add :b 1))]
+    (is (= 3 (bag :a))) ; как функция
+    (is (= 1 (bag :b)))
+    (is (= 0 (bag :c))) ; отсутствующий элемент
+    (is (= :not-found (bag :d :not-found))) ; с значением по умолчанию
+
+    ; через get (использует ILookup)
+    (is (= 3 (get bag :a)))
+    (is (= 1 (get bag :b)))
+    (is (= 0 (get bag :c)))
+    (is (= :default (get bag :e :default))))
+
+  ; Equiv - сравнение через =
+  (let [bag1 (-> (avl-bag) (add 1 2) (add 2 1))
+        bag2 (-> (avl-bag) (add 2 1) (add 1 2))
+        bag3 (-> (avl-bag) (add 1 1) (add 2 2))]
+    (is (= bag1 bag2)) ; одинаковые мультимножества
+    (is (not= bag1 bag3)) ; разные
+    (is (not= bag1 [1 1 2])))) ; сравнение с другим типом

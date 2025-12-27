@@ -278,31 +278,31 @@
       (fold-right-node (:left node) f acc-node))))
 
 ; Тип данных AVL-BAG
-(defrecord AvlBag [root]
+(deftype AvlBag [root]
   Bag
   (add
     [_ element count]
     (if (> count 0)
-      (->AvlBag (add-value root element count))
-      (->AvlBag root)))
+      (AvlBag. (add-value root element count))
+      (AvlBag. root)))
 
   (add-one
     [_ element]
-    (->AvlBag (add-value root element 1)))
+    (AvlBag. (add-value root element 1)))
 
   (del
     [_ element count]
-    (->AvlBag (del-value root element count)))
+    (AvlBag. (del-value root element count)))
 
   (del-one
     [_ element]
-    (->AvlBag (del-value root element 1)))
+    (AvlBag. (del-value root element 1)))
 
   (set-count
     [_ element count]
     (if (> count 0)
-      (->AvlBag (set-count-for-value root element count))
-      (->AvlBag root)))
+      (AvlBag. (set-count-for-value root element count))
+      (AvlBag. root)))
 
   (has?
     [_ element]
@@ -322,11 +322,11 @@
 
   (map-bag
     [_ f]
-    (->AvlBag (map-node-into-root root nil f)))
+    (AvlBag. (map-node-into-root root nil f)))
 
   (filter-bag
     [_ pred]
-    (->AvlBag (filter-node-into-root root nil pred)))
+    (AvlBag. (filter-node-into-root root nil pred)))
 
   (fold-left
     [_ f init]
@@ -338,7 +338,7 @@
 
   (empty-bag
     [_]
-    (->AvlBag nil))
+    (AvlBag. nil))
 
   (concat-bag
     [this bag]
@@ -355,8 +355,42 @@
                        (and acc
                             (= (.count-of this v)
                                (.count-of other-bag v))))
-                     true))))
+                     true)))
+
+  clojure.lang.Seqable
+  (seq [this]
+    (let [elements (.fold-left this conj [])]
+      (seq elements)))
+
+  clojure.lang.Counted
+  (count [this]
+    (.total-count this))
+
+  clojure.lang.IPersistentCollection
+  (cons [this element]
+    (.add-one this element))
+  (empty [_]
+    (AvlBag. nil))
+  (equiv [this other]
+    (cond
+      (identical? this other) true
+      (instance? AvlBag other) (.equals-bag? this other)
+      :else false))
+
+  clojure.lang.ILookup
+  (valAt [this key]
+    (.count-of this key))
+  (valAt [this key not-found]
+    (let [cnt (.count-of this key)]
+      (if (zero? cnt) not-found cnt)))
+
+  clojure.lang.IFn
+  (invoke [this key]
+    (.count-of this key))
+  (invoke [this key not-found]
+    (let [cnt (.count-of this key)]
+      (if (zero? cnt) not-found cnt))))
 
 ; Функция-конструктор
 (defn avl-bag
-  ([] (->AvlBag nil)))
+  ([] (AvlBag. nil)))

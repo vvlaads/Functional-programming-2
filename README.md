@@ -186,31 +186,31 @@
 ### Разработанный тип данных и функция-конструктор:
 ```clojure
 ; Тип данных AVL-BAG
-(defrecord AvlBag [root]
+(deftype AvlBag [root]
   Bag
   (add
     [_ element count]
     (if (> count 0)
-      (->AvlBag (add-value root element count))
-      (->AvlBag root)))
+      (AvlBag. (add-value root element count))
+      (AvlBag. root)))
 
   (add-one
     [_ element]
-    (->AvlBag (add-value root element 1)))
+    (AvlBag. (add-value root element 1)))
 
   (del
     [_ element count]
-    (->AvlBag (del-value root element count)))
+    (AvlBag. (del-value root element count)))
 
   (del-one
     [_ element]
-    (->AvlBag (del-value root element 1)))
+    (AvlBag. (del-value root element 1)))
 
   (set-count
     [_ element count]
     (if (> count 0)
-      (->AvlBag (set-count-for-value root element count))
-      (->AvlBag root)))
+      (AvlBag. (set-count-for-value root element count))
+      (AvlBag. root)))
 
   (has?
     [_ element]
@@ -230,11 +230,11 @@
 
   (map-bag
     [_ f]
-    (->AvlBag (map-node-into-root root nil f)))
+    (AvlBag. (map-node-into-root root nil f)))
 
   (filter-bag
     [_ pred]
-    (->AvlBag (filter-node-into-root root nil pred)))
+    (AvlBag. (filter-node-into-root root nil pred)))
 
   (fold-left
     [_ f init]
@@ -246,7 +246,7 @@
 
   (empty-bag
     [_]
-    (->AvlBag nil))
+    (AvlBag. nil))
 
   (concat-bag
     [this bag]
@@ -263,11 +263,45 @@
                        (and acc
                             (= (.count-of this v)
                                (.count-of other-bag v))))
-                     true))))
+                     true)))
+
+  clojure.lang.Seqable
+  (seq [this]
+    (let [elements (.fold-left this conj [])]
+      (seq elements)))
+
+  clojure.lang.Counted
+  (count [this]
+    (.total-count this))
+
+  clojure.lang.IPersistentCollection
+  (cons [this element]
+    (.add-one this element))
+  (empty [_]
+    (AvlBag. nil))
+  (equiv [this other]
+    (cond
+      (identical? this other) true
+      (instance? AvlBag other) (.equals-bag? this other)
+      :else false))
+
+  clojure.lang.ILookup
+  (valAt [this key]
+    (.count-of this key))
+  (valAt [this key not-found]
+    (let [cnt (.count-of this key)]
+      (if (zero? cnt) not-found cnt)))
+
+  clojure.lang.IFn
+  (invoke [this key]
+    (.count-of this key))
+  (invoke [this key not-found]
+    (let [cnt (.count-of this key)]
+      (if (zero? cnt) not-found cnt))))
 
 ; Функция-конструктор
 (defn avl-bag
-  ([] (->AvlBag nil)))
+  ([] (AvlBag. nil)))
 ```
 
 ## Тестирование
@@ -305,6 +339,55 @@
     (is (= 1 (count-of bag4 30)))
     (is (has? bag4 10))
     (is (has? bag4 30)))
+```
+
+Использование стандартных протоколов коллекции:
+```clojure
+(deftest clojure-interfaces-tests
+  ; Seqable - можно ли получить последовательность
+  (let [bag (-> (avl-bag)
+                (add 1 2)
+                (add 2 1))]
+    (is (seq? (seq bag)))
+    (is (= [1 1 2] (sort (seq bag)))) ; сортируем, т.к. порядок может быть любой
+    (is (= 3 (count (seq bag)))))
+
+  ; Counted - работает ли count
+  (let [bag (-> (avl-bag)
+                (add 1 3)
+                (add 2 2))]
+    (is (= 5 (count bag))))
+
+  ; IPersistentCollection - conj и empty
+  (let [bag (-> (avl-bag)
+                (add 1 2))]
+    (is (= 3 (count-of (conj bag 1) 1))) ; conj должен увеличивать count
+    (is (= 1 (count-of (conj bag 2) 2))) ; conj для нового элемента
+    (is (empty? (empty bag)))
+    (is (= 0 (count (empty bag)))))
+
+  ; ILookup/IFn - доступ как функция и через get
+  (let [bag (-> (avl-bag)
+                (add :a 3)
+                (add :b 1))]
+    (is (= 3 (bag :a))) ; как функция
+    (is (= 1 (bag :b)))
+    (is (= 0 (bag :c))) ; отсутствующий элемент
+    (is (= :not-found (bag :d :not-found))) ; с значением по умолчанию
+
+    ; через get (использует ILookup)
+    (is (= 3 (get bag :a)))
+    (is (= 1 (get bag :b)))
+    (is (= 0 (get bag :c)))
+    (is (= :default (get bag :e :default))))
+
+  ; Equiv - сравнение через =
+  (let [bag1 (-> (avl-bag) (add 1 2) (add 2 1))
+        bag2 (-> (avl-bag) (add 2 1) (add 1 2))
+        bag3 (-> (avl-bag) (add 1 1) (add 2 2))]
+    (is (= bag1 bag2)) ; одинаковые мультимножества
+    (is (not= bag1 bag3)) ; разные
+    (is (not= bag1 [1 1 2])))) ; сравнение с другим типом
 ```
 ---
 
@@ -345,13 +428,13 @@
 Running tests in #{"test"}
 
 Testing avl-bag.property-based-test
-{:result true, :num-tests 100, :seed 1765297672187, :time-elapsed-ms 1286, :test-var "concat-associative"}
-{:result true, :num-tests 100, :seed 1765297673525, :time-elapsed-ms 102, :test-var "add-one-increases-count"}
-{:result true, :num-tests 100, :seed 1765297673637, :time-elapsed-ms 245, :test-var "empty-bag-left-neutral"}
+{:result true, :num-tests 100, :seed 1766815415627, :time-elapsed-ms 1160, :test-var "concat-associative"}
+{:result true, :num-tests 100, :seed 1766815416817, :time-elapsed-ms 80, :test-var "add-one-increases-count"}
+{:result true, :num-tests 100, :seed 1766815416903, :time-elapsed-ms 143, :test-var "empty-bag-left-neutral"}
 
 Testing avl-bag.unit-test
 
-Ran 5 tests containing 42 assertions.
+Ran 7 tests containing 113 assertions.
 0 failures, 0 errors.
 ```
 ---
